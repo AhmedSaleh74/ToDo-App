@@ -3,29 +3,29 @@ package com.`as`.collegealert.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.View.OnClickListener
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.work.Constraints
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
+import com.`as`.collegealert.EventNotificationWorker
 import com.`as`.collegealert.data.EventsDatabase
 import com.`as`.collegealert.R
 import com.`as`.collegealert.databinding.ActivityMainBinding
-import com.`as`.collegealert.pojo.EventNotification
 import com.xwray.groupie.GroupieAdapter
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity(),OnClickListener{
     lateinit var binding : ActivityMainBinding
@@ -36,6 +36,17 @@ class MainActivity : AppCompatActivity(),OnClickListener{
         ActivityResultContracts.StartActivityForResult()
     ){
         loadEvents()
+    }
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // الصلاحية مُنحت، يمكن جدولة المهمة
+            scheduleEventNotificationWorker()
+        } else {
+            // الصلاحية مرفوضة، إظهار رسالة للمستخدم
+            Log.e("MainActivity", "Notification permission denied")
+        }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,47 +66,44 @@ class MainActivity : AppCompatActivity(),OnClickListener{
         binding.eventsRV.adapter = adapter
         loadEvents()
         searchEvents()
+        checkNotificationPermission()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        checkNotificationPermission()
         pool.shutdown()
     }
-    private fun notificationsEvent(){
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS),1)
-        }else{
-            val constraints = Constraints.Builder().setRequiresBatteryNotLow(true).build()
-            val request = OneTimeWorkRequest.Builder(EventNotification::class.java)
-                .setConstraints(constraints)
-                .setInitialDelay(15,TimeUnit.SECONDS)
-                .build()
-            WorkManager.getInstance(this).enqueue(request)
+
+    private fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                scheduleEventNotificationWorker()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            scheduleEventNotificationWorker()
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray,
-        deviceId: Int
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
-        if (requestCode == 1){
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                val constraints = Constraints.Builder().setRequiresBatteryNotLow(true).build()
-                val request = OneTimeWorkRequest.Builder(EventNotification::class.java)
-                    .setConstraints(constraints)
-                    .setInitialDelay(15,TimeUnit.SECONDS)
-                    .build()
-                WorkManager.getInstance(this).enqueue(request)
-            }
-        }
+    private fun scheduleEventNotificationWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true) // يعمل فقط إذا كانت البطارية ليست منخفضة
+            .build()
+
+        val workRequest = OneTimeWorkRequest.Builder(EventNotificationWorker::class.java)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueue(workRequest)
+        Log.d("MainActivity", "EventNotificationWorker scheduled")
     }
+
     private fun searchEvents(){
         binding.searchEvents.doAfterTextChanged { eventName ->
             pool.submit{
@@ -110,6 +118,7 @@ class MainActivity : AppCompatActivity(),OnClickListener{
             }
         }
     }
+
     private fun loadEvents() {
         pool.submit {
             val events = eventsDatabase.eventsDao().getEvents()
@@ -122,6 +131,7 @@ class MainActivity : AppCompatActivity(),OnClickListener{
             }
         }
     }
+
     fun deleteEventById(eventId: Int) {
         pool.submit {
             val eventsDatabase = EventsDatabase.getInstance(this)
@@ -135,16 +145,17 @@ class MainActivity : AppCompatActivity(),OnClickListener{
             }
         }
     }
+
     fun addEvent(){
         val intent = Intent(this, AddItemActivity::class.java)
         launcher.launch(intent)
         finish()
     }
+
     override fun onClick(v: View) {
         when(v.id){
             R.id.addEventFAB -> addEvent()
         }
     }
-
 
 }
