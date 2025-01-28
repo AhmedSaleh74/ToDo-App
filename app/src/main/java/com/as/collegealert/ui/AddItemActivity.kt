@@ -24,6 +24,7 @@ class AddItemActivity : AppCompatActivity(), OnClickListener {
     lateinit var date: Date
     lateinit var time: Time
     lateinit var pool: ExecutorService
+    lateinit var eventsDatabase:EventsDatabase
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
@@ -38,6 +39,7 @@ class AddItemActivity : AppCompatActivity(), OnClickListener {
         date = Date(this)
         time = Time(this)
         pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+        eventsDatabase = EventsDatabase.getInstance(this)
         binding.createTaskButton.setOnClickListener(this)
         binding.backButton.setOnClickListener(this)
         binding.selectedDateText.setOnClickListener(this)
@@ -65,8 +67,7 @@ class AddItemActivity : AppCompatActivity(), OnClickListener {
         }
 
         pool.submit {
-            val event = Event(eventDescription, eventDate, eventTime)
-            val eventsDatabase = EventsDatabase.getInstance(this)
+            val event = Event(eventDescription,eventDate,eventTime)
                 eventsDatabase.eventsDao().insertEvent(event)
                 runOnUiThread {
                     Toast.makeText(this, "Event added successfully!", Toast.LENGTH_SHORT).show()

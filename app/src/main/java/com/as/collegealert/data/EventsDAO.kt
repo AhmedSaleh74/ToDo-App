@@ -9,7 +9,7 @@ import androidx.room.Query
 interface EventsDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertEvent(event: Event)
-    @Query("select * from events_table")
+    @Query("SELECT * FROM events_table ORDER BY eventDate ASC, eventTime ASC")
     fun getEvents():List<Event>
     @Query("DELETE FROM events_table WHERE id = :eventId")
     fun deleteEventById(eventId: Int)
