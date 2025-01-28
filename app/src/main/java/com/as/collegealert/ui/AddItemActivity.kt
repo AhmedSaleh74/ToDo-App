@@ -67,7 +67,7 @@ class AddItemActivity : AppCompatActivity(), OnClickListener {
         }
 
         pool.submit {
-            val event = Event(eventDescription,eventDate,eventTime)
+            val event = Event( eventDescription, eventDate, eventTime)
                 eventsDatabase.eventsDao().insertEvent(event)
                 runOnUiThread {
                     Toast.makeText(this, "Event added successfully!", Toast.LENGTH_SHORT).show()
