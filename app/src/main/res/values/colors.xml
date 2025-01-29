@@ -9,4 +9,6 @@
     <color name="accent_color">#3498DB</color>
     <color name="background_light_gray">#F5F5F5</color>
     <color name="error_color">#FF5252</color>
+    <color name="splash_background">#FFFFFF</color>
+    <color name="primary_blue">#4A90E2</color>
 </resources>

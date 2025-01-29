@@ -39,6 +39,7 @@ android {
 
 dependencies {
 
+    implementation "androidx.core:core-splashscreen:1.0.1"
     implementation "androidx.work:work-runtime-ktx:2.10.0"
     implementation 'com.daimajia.androidanimations:library:2.4@aar'
     implementation 'com.squareup.picasso:picasso:2.8'

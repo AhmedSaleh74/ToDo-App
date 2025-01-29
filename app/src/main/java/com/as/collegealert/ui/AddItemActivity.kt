@@ -6,6 +6,7 @@ import android.view.View
 import android.view.View.OnClickListener
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
@@ -51,11 +52,18 @@ class AddItemActivity : AppCompatActivity(), OnClickListener {
         pool.shutdown()
     }
 
+    override fun onBackPressed() {
+        super.onBackPressed()
+        pool.shutdown()
+        backButton()
+    }
+
     fun backButton() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
     }
+
     fun createEvent() {
         val eventDescription = binding.taskInput.text.toString().lowercase()
         val eventDate = date.selectedDate
@@ -67,12 +75,11 @@ class AddItemActivity : AppCompatActivity(), OnClickListener {
         }
 
         pool.submit {
-            val event = Event( eventDescription, eventDate, eventTime)
+            val event = Event(eventDescription, eventDate, eventTime)
                 eventsDatabase.eventsDao().insertEvent(event)
                 runOnUiThread {
                     Toast.makeText(this, "Event added successfully!", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
+                    backButton()
                 }
         }
     }
