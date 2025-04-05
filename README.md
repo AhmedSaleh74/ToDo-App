@@ -33,7 +33,7 @@ It uses **Room** for local database management and **WorkManager** to schedule a
 
 | Tasks List with Alarms | Add Task with Time |
 |--------------------|------------------------|
-| ![List Screen](assets/screenshots/1.png) | ![Add Screen](assets/screenshots/2.png) |
+| ![List Screen](1.png) | ![Add Screen](2.png) |
 
 ---
 
